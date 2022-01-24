@@ -62,7 +62,7 @@ func main() {
 			item = cache1.delete(key)
 			heap.Remove(&pq, item.index)
 		} else if mode == 5 {
-			fmt.Println(cache1.Map)
+			cache1.printMap()
 		} else if mode == 6 {
 			break
 		}

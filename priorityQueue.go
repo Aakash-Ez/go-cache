@@ -39,14 +39,10 @@ func (pq *PriorityQueue) Push(x interface{}) {
 func (pq *PriorityQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
-	item := old[0]
+	item := old[n-1]
 	old[n-1] = nil  
 	item.item.index = -1 
-	if n > 1 {
-		*pq = old[1:n]
-	} else {
-		*pq = make(PriorityQueue, 0)
-	}
+	*pq = old[0:n-1]
 	return item
 }
 
@@ -60,6 +56,5 @@ func (pq *PriorityQueue) checkExpiry(cache *Cache){
 			queueItem := heap.Pop(pq).(*QueueItem)
 			cache.delete(queueItem.key)
 		}
-		time.Sleep(500 * time.Millisecond)
 	}
 }

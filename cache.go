@@ -2,6 +2,7 @@ package main
 
 import (
 	"time"
+	"fmt"
 )
 
 type Item struct {
@@ -51,6 +52,12 @@ func (c *Cache) delete(key string) (item *Item) {
 	}
 	delete(c.Map, key)
 	return
+}
+
+func (c *Cache) printMap() {
+	for key, value := range c.Map {
+		fmt.Printf("%s: %d %d \n",key, value.data, value.expirationTime)
+	}
 }
 
 func newCache() (cache Cache) {
