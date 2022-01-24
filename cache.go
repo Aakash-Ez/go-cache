@@ -7,10 +7,11 @@ import (
 type Item struct {
 	data           int64
 	expirationTime int64
+	index int
 }
 
 type Cache struct {
-	Map map[string]Item
+	Map map[string]*Item
 }
 
 type Parameters struct {
@@ -19,18 +20,21 @@ type Parameters struct {
 	TTL int64
 }
 
-func (c *Cache) set(parameter Parameters) {
+func (c *Cache) set(parameter Parameters) (item *Item, exists bool){
 	if parameter.TTL == 0{
 		parameter.TTL = 60
 	} else if parameter.TTL < 0 {
 		panic("ERR: TTL cannot be negative.")
 	}
-	c.Map[parameter.key] = Item{data: parameter.data, expirationTime: time.Now().Unix() + parameter.TTL}
+	_, exists = c.Map[parameter.key]
+	c.Map[parameter.key] = &Item{data: parameter.data, expirationTime: time.Now().Unix() + parameter.TTL}
+	item = c.Map[parameter.key]
+	return
 }
 
 func (c *Cache) get(key string) (value int64) {
 	var state bool
-	var item Item
+	var item *Item
 	item, state = c.Map[key]
 	value = item.data
 	if !state {
@@ -39,26 +43,17 @@ func (c *Cache) get(key string) (value int64) {
 	return
 }
 
-func (c *Cache) delete(key string) {
+func (c *Cache) delete(key string) (item *Item) {
 	var state bool
-	_, state = c.Map[key]
+	item, state = c.Map[key]
 	if !state {
 		panic("ERR: Key not found.")
 	}
 	delete(c.Map, key)
-}
-
-func newCache() (cache Cache) {
-	cache = Cache{Map: make(map[string]Item)}
 	return
 }
 
-func checkExpiry(cache *Cache){
-	for {
-		for key, value := range cache.Map {
-			if value.expirationTime < time.Now().Unix() {
-				delete(cache.Map,key)
-			}
-		}
-	}
+func newCache() (cache Cache) {
+	cache = Cache{Map: make(map[string]*Item)}
+	return
 }
