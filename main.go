@@ -25,13 +25,12 @@ func main() {
 				fmt.Println(pq[i])
 			}
 		}
-		fmt.Println(pq)
 		fmt.Println("Enter mode:\n 1. Set Value with default TTL\n 2. Set Value with TTL \n 3. Get Value \n 4. Delete Value \n 5. Print Map \n 6. Quit")
 		fmt.Scanln(&mode)
 		if mode == 1 {
 			fmt.Print("Enter key, value: ")
 			fmt.Scan(&key, &value)
-			item, exists = cache1.set(Parameters{data: int64(value), key: key})
+			item, exists = cache1.set(Parameters{data: int64(value), key: key}, &pq)
 			if exists {
 				fmt.Println(item.data, item.expirationTime)
 				pq[item.index].item = item
@@ -43,7 +42,7 @@ func main() {
 		} else if mode == 2 {
 			fmt.Print("Enter key, value, TTL: ")
 			fmt.Scan(&key, &value, &TTL)
-			item, exists = cache1.set(Parameters{data: int64(value), key: key, TTL: int64(TTL)})
+			item, exists = cache1.set(Parameters{data: int64(value), key: key, TTL: int64(TTL)}, &pq)
 			if exists {
 				fmt.Println(item.data, item.expirationTime)
 				pq[item.index].item = item
@@ -55,11 +54,13 @@ func main() {
 		} else if mode == 3 {
 			fmt.Print("Enter key: ")
 			fmt.Scan(&key)
-			fmt.Println(cache1.get(key))
+			value, c := cache1.get(key, &pq)
+			fmt.Println(value)
+			heap.Fix(&pq, c.index)
 		} else if mode == 4 {
 			fmt.Print("Enter key: ")
 			fmt.Scan(&key)
-			item = cache1.delete(key)
+			item = cache1.delete(key, &pq)
 			heap.Remove(&pq, item.index)
 		} else if mode == 5 {
 			cache1.printMap()
