@@ -1,61 +1,70 @@
 package main
 
 import (
-	"container/heap"
 	"fmt"
 	"math"
 	"time"
+	"container/heap"
+	"sync"
 )
 
+// Item Structure to store the cache values
 type Item struct {
-	data           int64
-	expirationTime int64
-	TTL int 
-	index int
+	data           int64 // data to be stored in cache
+	expirationTime int64 // Expiration time for the item
+	TTL int // Time To Live for the Item
+	index int // index of the item in the Priority Queue
 }
 
 type Cache struct {
-	Map map[string]*Item
-	timer *time.Timer
+	Map map[string]*Item // Key Value pair for the cache
+	timer *time.Timer //Timer to check expired item
+	m sync.Mutex
 }
 
+
+
+// Input argument for set function
 type Parameters struct {
-	data int64
-	key string
-	TTL int64
+	data int64 // data to be stored in cache
+	key string // key assoicated with the value
+	TTL int64 // Time To Live for the item in cache
 }
 
+// Set Function for Cache
 func (c *Cache) set(parameter Parameters, pq *PriorityQueue) (item *Item, exists bool){
 	if parameter.TTL == 0{
-		parameter.TTL = 60
+		parameter.TTL = 60 // if no TTL is provided assign default value as 60s
 	} else if parameter.TTL < 0 {
-		panic("ERR: TTL cannot be negative.")
+		panic("ERR: TTL cannot be negative.") // raise error if TTL provided is negative
 	}
-	_, exists = c.Map[parameter.key]
-	expirationTime := time.Now().Unix() + parameter.TTL
-	c.Map[parameter.key] = &Item{data: parameter.data, expirationTime: expirationTime, TTL: int(parameter.TTL)}
-	item = c.Map[parameter.key]
-	if (*pq).Len() == 0 {
-		c.timer.Reset(time.Duration(parameter.TTL * int64(math.Pow(10,9))))
-	} else if (*pq)[(*pq).Len() - 1].item.expirationTime > expirationTime{
-		c.timer.Reset(time.Duration(parameter.TTL * int64(math.Pow(10,9))))
+	old, exists := c.Map[parameter.key] // check whether key already exists in cache 
+	expirationTime := time.Now().Unix() + parameter.TTL // update expiration Time
+	c.Map[parameter.key] = &Item{data: parameter.data, expirationTime: expirationTime, TTL: int(parameter.TTL), index: pq.Len() + 1} //asign value to cache
+
+	if exists {
+		c.Map[parameter.key].index = old.index
+		item = c.Map[parameter.key]
+		(*pq)[old.index].item = item
+		(*pq).update(item)
+	} else {
+		item = c.Map[parameter.key]
+		queueItem := createQueueItem(parameter.key,item)
+		heap.Push(pq, queueItem)
 	}
+	timeLeft := (*pq)[0].item.expirationTime - time.Now().Unix() 
+	c.timer.Reset(time.Duration(timeLeft * int64(math.Pow(10,9))))
 	return
 }
 
-func (c *Cache) get(key string, pq *PriorityQueue) (value int64, item *Item) {
+// Get function for cache
+func (c *Cache) get(key string) (value int64, item *Item) {
 	var state bool
-	item, state = c.Map[key]
+	item, state = c.Map[key] //get value from the Map
 	if !state {
-		panic("ERR: Key not found.")
+		panic("ERR: Key not found.") // raise error if key does not exist in cache
 	}
 	value = item.data
-	item.expirationTime = time.Now().Unix() + int64(item.TTL)
-	old := (*pq)[pq.Len() - 1]
-	heap.Fix(pq, item.index)
-	if old != (*pq)[pq.Len() - 1] {
-		c.timer.Reset(time.Duration(((*pq)[pq.Len() - 1].item.expirationTime - time.Now().Unix()) * int64(math.Pow(10,9))))
-	}
 	return
 }
 
@@ -63,13 +72,14 @@ func (c *Cache) delete(key string, pq *PriorityQueue) (item *Item) {
 	var state bool
 	item, state = c.Map[key]
 	if !state {
+		fmt.Println(c.Map)
 		panic("ERR: Key not found.")
 	}
-	n := pq.Len()
 	if pq.Len() == 0 {
 		c.timer.Stop()
-	} else if item.index == n - 1 || item.index == -1{
-		c.timer.Reset(time.Duration(((*pq)[pq.Len() - 1].item.expirationTime - time.Now().Unix()) * int64(math.Pow(10,9))))
+	} else {
+		timeLeft := (*pq)[0].item.expirationTime - time.Now().Unix()
+		c.timer.Reset(time.Duration(timeLeft * int64(math.Pow(10,9))))
 	}
 	delete(c.Map, key)
 	return

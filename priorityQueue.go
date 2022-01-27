@@ -2,6 +2,7 @@ package main
 
 import (
 	"container/heap"
+	"fmt"
 )
 
 type QueueItem struct {
@@ -51,8 +52,15 @@ func (pq *PriorityQueue) update(item *Item) {
 
 func (pq *PriorityQueue) checkExpiry(cache *Cache){
 	for range cache.timer.C {
-		cache.printMap()
+		cache.m.Lock()
 		queueItem := heap.Pop(pq).(*QueueItem)
 		cache.delete(queueItem.key, pq)
+		cache.m.Unlock()
+	}
+}
+
+func (pq *PriorityQueue) printList() {
+	for i := 0; i < pq.Len(); i++ {
+		fmt.Println((*pq)[i].item.index, (*pq)[i].item.expirationTime, (*pq)[i].key)
 	}
 }
