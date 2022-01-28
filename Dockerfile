@@ -12,6 +12,4 @@ COPY *.go ./
 
 RUN go build -o docker-go-ttlcache
 
-RUN chmod 755 docker-go-ttlcache
-
 CMD './docker-go-ttlcache'
