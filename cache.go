@@ -58,13 +58,13 @@ func (c *Cache) set(parameter Parameters, pq *PriorityQueue) (item *Item, exists
 }
 
 // Get function for cache
-func (c *Cache) get(key string) (value int64, item *Item) {
-	var state bool
+func (c *Cache) get(key string) (value int64, item *Item, state bool) {
 	item, state = c.Map[key] //get value from the Map
 	if !state {
-		panic("ERR: Key not found.") // raise error if key does not exist in cache
+		value = 0
+	} else {
+		value = item.data
 	}
-	value = item.data
 	return
 }
 

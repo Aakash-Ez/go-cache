@@ -31,8 +31,8 @@ func main() {
 		} else if mode == 3 { // get value from the cache
 			fmt.Print("Enter key: ")
 			fmt.Scan(&key)
-			value, _ := cache1.get(key)
-			fmt.Println(value)
+			value, _, status := cache1.get(key)
+			fmt.Println(value, status)
 		} else if mode == 4 { // Delete key-value pair from cache
 			fmt.Print("Enter key: ")
 			fmt.Scan(&key)

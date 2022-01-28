@@ -96,7 +96,7 @@ func TestDeleteOperation(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	time.Sleep(2 * time.Second)
 	cache.printMap()
-	_, item := cache.get("A")
+	_, item, _ := cache.get("A")
 	heap.Remove(&pq, item.index)
 	cache.delete("A", &pq)
 
@@ -112,11 +112,49 @@ func TestDeleteOperation(t *testing.T) {
 		t.Errorf("Expected 1 element in map. Found %d", len(cache.Map))
 	}
 
-	time.Sleep(2000 * time.Millisecond)
+	time.Sleep(2100 * time.Millisecond)
 
 	if len(cache.Map) != 0 {
 		cache.printMap()
 		t.Errorf("Expected 0 elements in map. Found %d", len(cache.Map))
 	}
 
+}
+
+func TestGetFunction(t *testing.T) {
+	cache := newCache()
+	pq := make(PriorityQueue, len(cache.Map))
+	heap.Init(&pq)
+	go pq.checkExpiry(&cache)
+
+	cache.set(Parameters{key: "A", data: 100, TTL: 4}, &pq)
+
+	cache.set(Parameters{key: "B", data: 19, TTL: 6}, &pq)
+
+	time.Sleep(2 * time.Second)
+
+	_, _, statusA := cache.get("A")
+	_, _, statusB := cache.get("B")
+
+	if !(statusA && statusB) {
+		t.Errorf("Expected 2 elements in map. Found %d", len(cache.Map))
+	}
+
+	time.Sleep(2100 * time.Millisecond)
+
+	_, _, statusA = cache.get("A")
+	_, _, statusB = cache.get("B")
+
+	if !(!statusA && statusB) {
+		t.Error("Invalid entries in the map.")
+	}
+
+	time.Sleep(2000 * time.Millisecond)
+
+	_, _, statusA = cache.get("A")
+	_, _, statusB = cache.get("B")
+
+	if statusA || statusB {
+		t.Error("Invalid entries in the map.")
+	}
 }
